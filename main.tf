@@ -14,6 +14,12 @@ variable "key_name" {
   default = "test-key"
 }
 
+provider "aws" {
+	access_key = "${var.aws_access_key}"
+	secret_key = "${var.aws_secret_key}"
+	region = "${var.region}"
+}
+
 # 作成したキーペアを格納するファイルを指定。
 # 存在しないディレクトリを指定した場合は新規にディレクトリを作成してくれる
 locals {
@@ -22,38 +28,31 @@ locals {
 }
 
 # privateキーのアルゴリズム設定
-resource "tls_private_key" "keygen" {
-  algorithm = "ED25519"
-
+resource "tls_private_key" "test" {
+	algorithm = "RSA"
+  rsa_bits  = 4096
 }
 
 # local_fileのリソースを指定するとterraformを実行するディレクトリ内でファイル作成やコマンド実行が出来る。
 resource "local_file" "private_key_pem" {
-	filename = local.private_key_file
-	content = tls_private_key.keygen.private_key_pem
+	filename = "${local.private_key_file}"
+	content = "${tls_private_key.test.private_key_pem}"
 	provisioner "local-exec" {
 		command = "chmod 600 ${local.private_key_file}"
 	}
 }
 
 resource "local_file" "public_key_openssh" {
-  filename = local.public_key_file
-  content  = tls_private_key.keygen.public_key_openssh
+  filename = "${local.public_key_file}"
+  content  = "${tls_private_key.test.public_key_openssh}"
   provisioner "local-exec" {
     command = "chmod 600 ${local.public_key_file}"
   }
 }
 
 resource "aws_key_pair" "key_pair" {
-	key_name = var.key_name
-	public_key = tls_private_key.keygen.public_key_openssh
-}
-
-
-provider "aws" {
-	access_key = "${var.aws_access_key}"
-	secret_key = "${var.aws_secret_key}"
-	region = "${var.region}"
+	key_name = "${var.key_name}"
+	public_key = "${tls_private_key.test.public_key_openssh}"
 }
 
 resource "aws_vpc" "test_vpc" {
@@ -76,6 +75,9 @@ resource "aws_subnet" "public-a" {
 	vpc_id = "${aws_vpc.test_vpc.id}"
 	cidr_block = "10.0.0.0/24"
 	availability_zone = "ap-northeast-1a"
+	tags = {
+		Name = "test_subnet"
+	}
 }
 
 resource "aws_route_table" "public-route" {
@@ -98,8 +100,8 @@ resource "aws_security_group" "test" {
 
 	# インバウンドルール（ssh接続用）
 	ingress {
-		from_port = 10022
-		to_port = 10022
+		from_port = 22
+		to_port = 22
 		protocol = "tcp"
 		cidr_blocks = ["${var.home_ip_address}"]
 	}
@@ -124,7 +126,7 @@ resource "aws_security_group" "test" {
 resource "aws_instance" "test" {
 	ami = "ami-0a3d21ec6281df8cb"
 	instance_type = "t2.micro"
-	key_name = "aws_key_pair.key_pair.id"
+	key_name = "${aws_key_pair.key_pair.id}"
 	vpc_security_group_ids = [
 		"${aws_security_group.test.id}"
 	]
