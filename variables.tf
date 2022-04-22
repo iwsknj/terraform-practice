@@ -4,7 +4,9 @@
 # ※環境変数はterraform.tfvarsというファイル名に<変数名> = "<値>"と書くことでコマンド実行時に読み込まれる
 variable "aws_access_key" {}
 variable "aws_secret_key" {}
-variable "home_ip_address" {}
+variable "elable_ips" {
+	type = list(string)
+}
 variable "region" {
 	default = "ap-northeast-1"
 }

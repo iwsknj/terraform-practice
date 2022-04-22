@@ -87,7 +87,7 @@ resource "aws_security_group" "test" {
 		from_port = 22
 		to_port = 22
 		protocol = "tcp"
-		cidr_blocks = ["${var.home_ip_address}"]
+		cidr_blocks = "${var.elable_ips}"
 	}
 
 	# インバウンドルール(pingコマンド用)
@@ -95,7 +95,7 @@ resource "aws_security_group" "test" {
 		from_port = -1
 		to_port = -1
 		protocol = "icmp"
-		cidr_blocks = ["${var.home_ip_address}"]
+		cidr_blocks = "${var.elable_ips}"
 	}
 
 	# アウトバウンドルール
