@@ -1,0 +1,5 @@
+aws_access_key = "xxxxxxxxx"
+aws_secret_key = "xxxxxxxxx"
+elable_ips = [
+	"11.11.111.11/32",
+]
